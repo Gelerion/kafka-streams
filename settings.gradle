@@ -1,0 +1,3 @@
+rootProject.name='kafka-streams'
+
+includeBuild '01_hello_world'
