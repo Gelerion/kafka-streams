@@ -1,5 +1,6 @@
 package com.gelerion.kafka.streams.crypto.sentiment;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
@@ -36,6 +37,7 @@ public class CryptoSentimentApp {
         Properties config = new Properties();
         config.put(StreamsConfig.APPLICATION_ID_CONFIG, "dev");
         config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092");
+        config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
 
         // build the topology and start streaming!
         KafkaStreams streams = new KafkaStreams(topology, config);

@@ -26,6 +26,9 @@ repositories {
 dependencies {
     // This dependency is used by the application.
     implementation 'org.apache.kafka:kafka-streams:2.7.0'
+
+    // required for JSON serializer
+    implementation 'com.google.code.gson:gson:2.8.5'
 }
 
 testing {
