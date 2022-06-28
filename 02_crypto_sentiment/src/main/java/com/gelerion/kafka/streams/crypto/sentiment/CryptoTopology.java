@@ -14,6 +14,7 @@ import org.apache.kafka.streams.kstream.Printed;
 
 public class CryptoTopology {
 
+    @SuppressWarnings({"varargs", "unchecked"})
     public static Topology build() {
         LanguageClient languageClient = new DummyLanguageClient();
         StreamsBuilder builder = new StreamsBuilder();
@@ -50,7 +51,17 @@ public class CryptoTopology {
         nonEnglishStream.print(Printed.<byte[], Tweet>toSysOut().withLabel("tweets-non-english"));
 
         // Translating events
-        nonEnglishStream.mapValues(tweet -> languageClient.translate(tweet, "en"));
+        KStream<byte[], Tweet> translatedStream = nonEnglishStream
+                .mapValues(tweet -> languageClient.translate(tweet, "en"));
+
+        // Merging streams
+        // The equivalent of a merge in the SQL is a union query
+        // select column_name from table1
+        // union
+        // select column_name from table2
+        KStream<byte[], Tweet> merged = englishStream.merge(translatedStream);
+
+        // Enriching tweets with a sentiment score
 
         return builder.build();
     }
