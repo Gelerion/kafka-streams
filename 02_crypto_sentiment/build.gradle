@@ -35,6 +35,9 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.5'
     //avro support
     implementation 'org.apache.avro:avro:1.11.0'
+    implementation 'com.mitchseymour:kafka-registryless-avro-serdes:1.0.0'
+
+    implementation("com.google.guava:guava:31.1-jre")
 
     errorprone("com.google.errorprone:error_prone_core:2.3.2")
     errorproneJavac("com.google.errorprone:javac:9+181-r4173-1")

@@ -59,3 +59,38 @@ They provide a much nicer interface for accessing record data.
 ```sh
 $ gradle build && gradle idea
 ```
+
+#### Serializing Avro Data
+When we serialize data using Avro, we have two choices:  
+- Include the Avro schema in each record.  
+- Ise an even more compact format, by saving the Avro schema in Confluent Schema Registry, and only 
+  including a much smaller schema ID in each record instead of the entire schema
+
+The benefit of the first approach is you don’t have to set up and run a separate service alongside 
+your Kafka Streams application. Since Confluent Schema Registry is a REST service for creating 
+and retrieving Avro, Protobuf, and JSON schemas, it requires a separate deployment and therefore 
+introduces a maintenance cost and an additional point of failure. However, with the first approach, 
+you do end up with larger message sizes since the schema is included.
+
+However, if you are trying to eke every ounce of performance out of your Kafka Streams application, 
+the smaller payload sizes that Confluent Schema Registry enables may be necessary. Furthermore, 
+if you anticipate ongoing evolution of your record schemas and data model, the schema compatibility 
+checks that are included in Schema Registry help ensure that future schema changes are made in safe, 
+non-breaking ways
+
+![Screenshot](images/schema_registry.png)
+
+
+### Adding a Sink Processor
+There are a few operators for doing this:
+- to
+- through
+- repartition
+  
+If you want to return a `new KStream` instance for appending additional operators/stream processing logic, 
+then you should use the repartition or through operator (the latter is deprecated, but is still widely used a
+nd backward compatibility is expected).   
+Internally, these operators call `builder.stream` again, so 
+using them will result in additional sub-topologies being created by Kafka Streams. 
+However, if you have reached a terminal step in your stream, as we have, then you should use the `to` operator, 
+which returns void since no other stream processors need to be added to the underlying `KStream`.

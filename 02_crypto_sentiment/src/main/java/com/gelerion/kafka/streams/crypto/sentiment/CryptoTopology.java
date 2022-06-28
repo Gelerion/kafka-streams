@@ -2,6 +2,7 @@ package com.gelerion.kafka.streams.crypto.sentiment;
 
 import com.gelerion.kafka.streams.crypto.sentiment.language.DummyLanguageClient;
 import com.gelerion.kafka.streams.crypto.sentiment.language.LanguageClient;
+import com.gelerion.kafka.streams.crypto.sentiment.model.EntitySentiment;
 import com.gelerion.kafka.streams.crypto.sentiment.serialization.Tweet;
 import com.gelerion.kafka.streams.crypto.sentiment.serialization.json.TweetSerdes;
 import org.apache.kafka.common.serialization.Serdes;
@@ -12,7 +13,11 @@ import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.Predicate;
 import org.apache.kafka.streams.kstream.Printed;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class CryptoTopology {
+    private static final List<String> currencies = Arrays.asList("bitcoin", "ethereum");
 
     @SuppressWarnings({"varargs", "unchecked"})
     public static Topology build() {
@@ -62,6 +67,32 @@ public class CryptoTopology {
         KStream<byte[], Tweet> merged = englishStream.merge(translatedStream);
 
         // Enriching tweets with a sentiment score
+
+        /*
+        Example:
+         In:
+          #bitcoin is looking super strong. #ethereum has me worried though
+         Out:
+          {"entity": "bitcoin", "sentiment_score": 0.80}
+          {"entity": "ethereum", "sentiment_score": -0.20}
+         */
+        KStream<byte[], EntitySentiment> enriched = merged.flatMapValues(tweet -> {
+            List<EntitySentiment> sentiments = languageClient.getEntitySentiment(tweet);
+            // remove all entities that don’t match one of the cryptocurrencies we are tracking
+            sentiments.removeIf(sentiment -> !currencies.contains(sentiment.getEntity()));
+            return sentiments;
+        });
+
+        // Serializing Avro Data
+        // Kafka is a bytes-in, bytes-out stream processing platform. Therefore, in order to write the EntitySentiment
+        // records to our output topic, we need to serialize these Avro records into byte arrays.
+
+        /*
+        When we serialize data using Avro, we have two choices:
+         1. Include the Avro schema in each record.
+         2. Use an even more compact format, by saving the Avro schema in Confluent Schema Registry, and only
+            including a much smaller schema ID in each record instead of the entire schema
+         */
 
         return builder.build();
     }
