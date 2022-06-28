@@ -46,3 +46,16 @@ You should see records similar to the following appear in the sink topic.
 {"created_at":1577933872630,"entity":"bitcoin","text":"Bitcoin has a lot of promise. I'm not too sure about #ethereum","sentiment_score":0.3444212495322003,"sentiment_magnitude":0.9464683988787772,"salience":0.9316858469669134}
 {"created_at":1577933872630,"entity":"ethereum","text":"Bitcoin has a lot of promise. I'm not too sure about #ethereum","sentiment_score":0.1301464314096875,"sentiment_magnitude":0.8274198304784903,"salience":0.9112319163372604}
 ```
+
+#### Avro
+When working with Avro, you can use either generic records or specific records. Generic records are suitable when
+the record schema isn’t known at runtime. They allow you to access field names using generic getters and setters. 
+For example: `GenericRecord.get(String key)` and `GenericRecord.put(String key, Object value)`.
+  
+Specific records, on the other hand, are Java classes that are generated from Avro schema files. 
+They provide a much nicer interface for accessing record data.
+
+#### Generating avro files
+```sh
+$ gradle build && gradle idea
+```

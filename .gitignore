@@ -13,3 +13,9 @@ bin/
 
 .iml
 .idea/
+.ips
+.iws
+
+/*/*.iml
+/*/*.ipr
+/*/*.iws
