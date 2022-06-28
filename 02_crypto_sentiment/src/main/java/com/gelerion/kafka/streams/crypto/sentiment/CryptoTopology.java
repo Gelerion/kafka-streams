@@ -1,5 +1,7 @@
 package com.gelerion.kafka.streams.crypto.sentiment;
 
+import com.gelerion.kafka.streams.crypto.sentiment.language.DummyLanguageClient;
+import com.gelerion.kafka.streams.crypto.sentiment.language.LanguageClient;
 import com.gelerion.kafka.streams.crypto.sentiment.serialization.Tweet;
 import com.gelerion.kafka.streams.crypto.sentiment.serialization.json.TweetSerdes;
 import org.apache.kafka.common.serialization.Serdes;
@@ -13,6 +15,7 @@ import org.apache.kafka.streams.kstream.Printed;
 public class CryptoTopology {
 
     public static Topology build() {
+        LanguageClient languageClient = new DummyLanguageClient();
         StreamsBuilder builder = new StreamsBuilder();
 
         KStream<byte[], Tweet> stream = builder.stream(
@@ -45,6 +48,9 @@ public class CryptoTopology {
         // non-English tweets
         KStream<byte[], Tweet> nonEnglishStream = branches[1];
         nonEnglishStream.print(Printed.<byte[], Tweet>toSysOut().withLabel("tweets-non-english"));
+
+        // Translating events
+        nonEnglishStream.mapValues(tweet -> languageClient.translate(tweet, "en"));
 
         return builder.build();
     }
