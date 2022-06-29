@@ -4,8 +4,8 @@ import com.gelerion.kafka.streams.crypto.sentiment.language.DummyLanguageClient;
 import com.gelerion.kafka.streams.crypto.sentiment.language.LanguageClient;
 import com.gelerion.kafka.streams.crypto.sentiment.model.EntitySentiment;
 import com.gelerion.kafka.streams.crypto.sentiment.serialization.Tweet;
+import com.gelerion.kafka.streams.crypto.sentiment.serialization.avro.AvroSerdes;
 import com.gelerion.kafka.streams.crypto.sentiment.serialization.json.TweetSerdes;
-import com.mitchseymour.kafka.serialization.avro.AvroSerdes;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
@@ -91,13 +91,24 @@ public class CryptoTopology {
          2. Use an even more compact format, by saving the Avro schema in Confluent Schema Registry, and only
             including a much smaller schema ID in each record instead of the entire schema
          */
+
+//        enriched.to(
+//                "crypto-sentiment",
+//                Produced.with(
+//                        Serdes.ByteArray(),
+//                        com.mitchseymour.kafka.serialization.avro.AvroSerdes.get(EntitySentiment.class)
+//                )
+//        );
+
+        // Using schema registry
+        String schemaRegistryUrl = "http://localhost:8081";
         enriched.to(
                 "crypto-sentiment",
                 Produced.with(
                         Serdes.ByteArray(),
-                        AvroSerdes.get(EntitySentiment.class)
-                )
-        );
+                        // registry-aware Avro Serde
+                        AvroSerdes.entitySentiment(schemaRegistryUrl)
+                ));
 
         return builder.build();
     }
