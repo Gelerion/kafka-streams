@@ -42,3 +42,6 @@ $ kafka-console-producer \
   --bootstrap-server kafka:9092 \
   --topic score-events < score-events.json
 ```
+
+## KStream, KTable and GlobalKTable
+https://www.confluent.io/blog/crossing-streams-joins-apache-kafka/
