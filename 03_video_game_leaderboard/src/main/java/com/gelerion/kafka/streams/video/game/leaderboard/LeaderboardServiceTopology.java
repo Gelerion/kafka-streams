@@ -7,9 +7,11 @@ import com.gelerion.kafka.streams.video.game.leaderboard.models.join.Enriched;
 import com.gelerion.kafka.streams.video.game.leaderboard.models.join.ScoreWithPlayer;
 import com.gelerion.kafka.streams.video.game.leaderboard.serialization.json.JsonSerdes;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.state.KeyValueStore;
 
 public class LeaderboardServiceTopology {
 
@@ -100,8 +102,36 @@ public class LeaderboardServiceTopology {
         Aggregator<String, Enriched, HighScores> highScoresAdder =
                 (key, value, aggregate) -> aggregate.add(value);
 
+        // Materialized Stores
+        // Stateful operators like aggregate, count, reduce, etc., leverage state stores to manage internal state.
+        // However, there are overloaded versions of the above functions where you won’t see any mention of a state
+        // store. They use an internal state store that is only accessed by the processor topology.
+
+        // If we want to enable read-only access of the underlying state store for ad hoc queries, we can use one of
+        // the overloaded methods to force the materialization of the state store locally. Materialized state stores
+        // differ from internal state stores in that they are explicitly named and are queryable
+        // outside the processor topology.
+
+        //This variation of the Materialized.as method includes three generics:
+        /*
+           - The key type of the store (in this case, String)
+           - The value type of the store (in this case, HighScores)
+           - The type of state store (in this case, we’ll use a simple key-value store,
+             represented by KeyValueStore<Bytes, byte[]>)
+         */
+        Materialized<String, HighScores, KeyValueStore<Bytes, byte[]>> leaderboardMaterializer = Materialized
+                .<String, HighScores, KeyValueStore<Bytes, byte[]>>as("leaderboards")
+                .withKeySerde(Serdes.String())
+                .withValueSerde(JsonSerdes.HighScores());
+
         KTable<String, HighScores> highScores =
-                grouped.aggregate(highScoresInitializer, highScoresAdder);
+                grouped.aggregate(
+                        highScoresInitializer,
+                        highScoresAdder,
+                        leaderboardMaterializer
+                );
+
+        highScores.toStream().to("high-scores");
 
         return builder.build();
     }

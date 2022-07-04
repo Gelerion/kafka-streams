@@ -77,3 +77,19 @@ topic means that rekey operations can be expensive.
   
 Co-partitioning is not required for `GlobalKTable` joins since the state is fully replicated across 
 each instance of our Kafka Streams app.
+
+### Interactive Queries
+One of the defining features of Kafka Streams is its ability to expose application state, both locally and to the 
+outside world. The latter makes it easy to build event-driven microservices with extremely low latency.
+In order to do this, we need to materialize the state store.
+
+#### Local Queries
+ Each instance of a Kafka Streams application can query its own local state. However, it’s important to remember 
+that unless you are materializing a `GlobalKTable` or running a single instance of your Kafka Streams app, the local 
+state will only represent a partial view of the entire application state (this is the nature of a `KTable`)
+  
+#### Remote Queries
+In order to query the full state of our application, we need to:
+ - Discover which instances contain the various fragments of our application state
+ - Add a remote procedure call (RPC) or REST service to expose the local state to other running application instances
+ - Add an RPC or REST client for querying remote state stores from a running application instance

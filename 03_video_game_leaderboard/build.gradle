@@ -38,6 +38,11 @@ dependencies {
     implementation("com.google.guava:guava:31.1-jre")
     implementation 'com.google.code.gson:gson:2.8.5'
 
+    // required for interactive queries (server)
+    implementation 'io.javalin:javalin:4.6.3'
+    // required for interactive queries (client)
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+
     errorprone("com.google.errorprone:error_prone_core:2.3.2")
     errorproneJavac("com.google.errorprone:javac:9+181-r4173-1")
 }
