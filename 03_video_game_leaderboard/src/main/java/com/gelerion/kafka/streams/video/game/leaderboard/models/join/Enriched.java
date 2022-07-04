@@ -18,6 +18,8 @@ public class Enriched implements Comparable<Enriched> {
     }
 
     @Override
+    // In order for the TreeSet to know how to sort Enriched objects (and therefore, be able to identify the Enriched
+    // record with the lowest score to remove when our highScores aggregate exceeds three values
     public int compareTo(Enriched o) {
         return Double.compare(o.score, score);
     }

@@ -17,7 +17,7 @@ public class LeaderboardServiceTopology {
         StreamsBuilder builder = new StreamsBuilder();
 
         KStream<String, ScoreEvent> scoreEvents = builder
-                .stream("score-events", Consumed.with(Serdes.ByteArray(), JsonSerdes.scoreEvent()))
+                .stream("score-events", Consumed.with(Serdes.ByteArray(), JsonSerdes.ScoreEvent()))
                 // The score-events topic are unkeyed, but we’ll be joining with the players KTable, which is keyed
                 // by player ID. Therefore, we need to rekey the data in score-events by player ID as well,
                 // prior to performing the join
@@ -25,15 +25,15 @@ public class LeaderboardServiceTopology {
 
         // Create a partitioned (or sharded) table for the players topic, using the KTable abstraction
         KTable<String, Player> players = builder
-                .table("players", Consumed.with(Serdes.String(), JsonSerdes.player()));
+                .table("players", Consumed.with(Serdes.String(), JsonSerdes.Player()));
 
         // Create a GlobalKTable for the products topic, which will be replicated in full to each application instance
         GlobalKTable<String, Product> products = builder
-                .globalTable("products", Consumed.with(Serdes.String(), JsonSerdes.product()));
+                .globalTable("products", Consumed.with(Serdes.String(), JsonSerdes.Product()));
 
         // Joins
         Joined<String, ScoreEvent, Player> playerJoinParams =
-                Joined.with(Serdes.String(), JsonSerdes.scoreEvent(), JsonSerdes.player());
+                Joined.with(Serdes.String(), JsonSerdes.ScoreEvent(), JsonSerdes.Player());
 
         ValueJoiner<ScoreEvent, Player, ScoreWithPlayer> scorePlayerJoiner = ScoreWithPlayer::new;
 
@@ -76,6 +76,32 @@ public class LeaderboardServiceTopology {
 
         KStream<String, Enriched> withProducts =
                 withPlayers.join(products, keyMapper, productJoiner);
+        withProducts.print(Printed.<String, Enriched>toSysOut().withLabel("with-products"));
+
+        // Group the enriched product stream
+        // Before you perform any stream or table aggregations in Kafka Streams, you must first group the KStream or
+        // KTable that you plan to aggregate. The purpose of grouping is the same as rekeying records prior to joining:
+        // to ensure the related records are processed by the same observer, or Kafka Streams task.
+
+        //Since we want to calculate the high scores for each product ID, and since our enriched stream
+        // is currently keyed by player ID we need to repartition
+        KGroupedStream<String, Enriched> grouped = withProducts.groupBy(
+                (key, value) -> value.getProductId().toString(),
+                Grouped.with(Serdes.String(), JsonSerdes.Enriched()));
+
+        // Aggregations
+        // When a new key is seen by our Kafka Streams topology, we need some way of initializing the aggregation.
+        // The interface that helps us with this is Initializer
+        Initializer<HighScores> highScoresInitializer = HighScores::new;
+
+        // Adder
+        // The next thing we need to do in order to build a stream aggregator is to define the logic for combining
+        // two aggregates. This is accomplished using the Aggregator interface
+        Aggregator<String, Enriched, HighScores> highScoresAdder =
+                (key, value, aggregate) -> aggregate.add(value);
+
+        KTable<String, HighScores> highScores =
+                grouped.aggregate(highScoresInitializer, highScoresAdder);
 
         return builder.build();
     }
