@@ -3,6 +3,7 @@ package com.gelerion.kafka.streams.video.game.leaderboard;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.state.HostInfo;
 
 import java.util.Properties;
 
@@ -27,7 +28,7 @@ public class LeaderboardApp {
         // start listening on whatever port you configure. In fact, Kafka Streams does not include a built-in RPC
         // service. However, this host/port information is transmitted to other running instances of your Kafka Streams
         // application and is made available through dedicated API methods
-        props.put(StreamsConfig.APPLICATION_SERVER_CONFIG, "myapp:8080");
+        props.put(StreamsConfig.APPLICATION_SERVER_CONFIG, "localhost:8080");
 
         // build the topology
         System.out.println("Starting Video-game Leaderboard");
@@ -36,5 +37,10 @@ public class LeaderboardApp {
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
         // start streaming!
         streams.start();
+
+        // start the REST service
+        HostInfo hostInfo = new HostInfo("localhost", 8080);
+        LeaderboardService service = new LeaderboardService(hostInfo, streams);
+        service.start();
     }
 }

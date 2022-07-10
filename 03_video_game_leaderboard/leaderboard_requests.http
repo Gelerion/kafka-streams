@@ -1,0 +1,6 @@
+# Get all scores
+GET http://localhost:8080/leaderboard
+
+###
+# Get scores per prodict id
+GET http://localhost:8080/leaderboard/1
