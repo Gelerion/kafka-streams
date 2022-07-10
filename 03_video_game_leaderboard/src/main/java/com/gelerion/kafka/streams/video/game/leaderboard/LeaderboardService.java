@@ -21,6 +21,7 @@ import java.util.Map;
  * To access local state we’ll use Javalin to implement a REST service due to its simple API.
  * We will also use OkHttp, developed by Square, for our REST client for its ease of use.
  */
+@SuppressWarnings("all")
 public class LeaderboardService {
     private final HostInfo hostInfo;
     private final KafkaStreams streams;
