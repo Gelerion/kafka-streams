@@ -49,3 +49,27 @@ $ kafka-console-producer \
   --property 'key.separator=|' < body-temp-events.json
 ```
 
+### Time Semantics
+* Event time  
+When an event was created at the source. This timestamp can be embedded in the payload of an event, or set directly using the Kafka producer client as of version 0.10.0.
+  
+* Ingestion time  
+When the event is appended to a topic on a Kafka broker. This always occurs after event time.
+
+* Processing time  
+When the event is processed by your Kafka Streams application. This always occurs after event time and ingestion time. It is less static than event time, and reprocessing the same data (i.e., for bug fixes) will lead to new processing timestamps, and therefore nondeterministic windowing behavior.
+
+Kafka producers allow the default timestamp that gets set for each record to be overridden, which can also be used to 
+achieve event-time semantics. However, for systems that use this method for associating timestamps with events, 
+it’s important to be aware of two Kafka configurations (one at the broker level and one at the topic level) to 
+ensure you don’t accidentally end up with ingestion-time semantics. The relevant configurations are:
+  
+* `log.message.timestamp.type` (broker level)
+* `message.timestamp.type` (topic level)
+  
+There are two possible values for these configs: `CreateTime` or `LogAppendTime`. Furthermore, the topic-level config 
+takes precedence over the broker-level config. If the topic is configured with the LogAppendTime timestamp type,
+the timestamp that the producer appends to the message will be overwritten with the local system time of the broker 
+whenever a record is appended to the topic (therefore, you’ll be working with ingestion-time semantics, even if 
+that wasn’t your intent). If you want to achieve event-time semantics and you’re relying on the producer timestamp, 
+be sure that you are using CreateTime as the message timestamp type.
