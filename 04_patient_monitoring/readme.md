@@ -27,10 +27,25 @@ $ docker-compose up
 ```
 
 ## Producing Test Data
-
-  
+Once your application is running, you can produce some test data to see it in action. Since our patient monitoring 
+application reads from multiple topics (`pulse-events`, `body-temp-events`), we have saved example records for each 
+topic in the `data/` directory. To produce data into each of these topics, open a new tab in your shell and run the following commands.  
 ```sh
 # log into the broker, which is where the kafka console scripts live
 $ docker-compose exec kafka bash
+
+# produce test data to pulse-events topic
+$ kafka-console-producer \
+  --bootstrap-server kafka:9092 \
+  --topic pulse-events \
+  --property 'parse.key=true' \
+  --property 'key.separator=|' < pulse-events.json
+
+# produce test data to body-temp-events topic
+$ kafka-console-producer \
+  --bootstrap-server kafka:9092 \
+  --topic body-temp-events \
+  --property 'parse.key=true' \
+  --property 'key.separator=|' < body-temp-events.json
 ```
 
