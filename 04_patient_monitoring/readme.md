@@ -73,3 +73,10 @@ the timestamp that the producer appends to the message will be overwritten with 
 whenever a record is appended to the topic (therefore, you’ll be working with ingestion-time semantics, even if 
 that wasn’t your intent). If you want to achieve event-time semantics and you’re relying on the producer timestamp, 
 be sure that you are using CreateTime as the message timestamp type.
+
+#### Window Types
+* `Tumbling windows` are fixed-sized windows that never overlap. They are defined using a single property, the window size (in milliseconds), and have predictable time ranges since they are aligned with the epoch
+* `Hoping windows` are fixed-sized windows that may overlap. When configuring a hopping window, you must specify both the window size and the advance interval (how much the window moves forward). When the advance interval is less than the window size, then windows will overlap, allowing some records to appear in multiple windows
+* `Session windiows` are variable-sized windows that are determined by periods of activity followed by gaps of inactivity. A single parameter called the inactivity gap is used to define a session window. If the inactivity gap is five seconds, then each record that has a timestamp within five seconds of the previous record with the same key will be merged into the same window. Otherwise, if the timestamp of a new record is greater than the inactivity gap (in this case, five seconds), then a new window will be created
+* `Sliding join windws` are fixed-sized windows that are used for joins and created using the JoinWindows class. Two records fall within the same window if the difference between their timestamps is less than or equal to the window size
+* `Sliding aggregation windows` like sliding join windows, the window boundaries in a sliding aggregation window are aligned to the record timestamps (as opposed to the epoch) and the lower and upper window boundaries are both inclusive. Additionally, records will fall within the same window if the difference between their timestamps is within the specified window si
