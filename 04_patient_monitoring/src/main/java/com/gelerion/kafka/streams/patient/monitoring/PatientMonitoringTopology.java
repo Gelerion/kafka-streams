@@ -5,6 +5,7 @@ import com.gelerion.kafka.streams.patient.monitoring.models.Pulse;
 import com.gelerion.kafka.streams.patient.monitoring.serialization.json.JsonSerdes;
 import com.gelerion.kafka.streams.patient.monitoring.times.extractors.VitalTimestampExtractor;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.*;
@@ -85,6 +86,23 @@ public class PatientMonitoringTopology {
                 // the time range of the window
                 // [<old_key>@<window_start_ms>/<window_end_ms>]
                 .print(Printed.<Windowed<String>, Long>toSysOut().withLabel("pulse-counts"));
+
+        // 5.1
+        // filter for any pulse that exceeds our threshold
+        KStream<String, Long> highPulse = pulseCounts
+                // Convert to a stream, so we can use map operator to rekey the records
+                .toStream()
+                // Filter for only heart rates that exceed our predefined threshold of 100 bpm
+                .filter((key, value) -> value >= 100)
+                // Rekey the stream using the original key
+                .map((windowedKey, value) -> KeyValue.pair(windowedKey.key(), value));
+
+        // 5.2
+        // filter for any temperature reading that exceeds our threshold
+        KStream<String, BodyTemp> highTemp =
+                //Filter for only core body temperature readings that exceed our predefined threshold of 100.4°F
+                tempEvents.filter((key, value) ->
+                        value != null && value.getTemperature() != null && value.getTemperature() > 100.4);
 
         return builder.build();
     }
