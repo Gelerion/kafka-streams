@@ -79,4 +79,18 @@ be sure that you are using CreateTime as the message timestamp type.
 * `Hoping windows` are fixed-sized windows that may overlap. When configuring a hopping window, you must specify both the window size and the advance interval (how much the window moves forward). When the advance interval is less than the window size, then windows will overlap, allowing some records to appear in multiple windows
 * `Session windiows` are variable-sized windows that are determined by periods of activity followed by gaps of inactivity. A single parameter called the inactivity gap is used to define a session window. If the inactivity gap is five seconds, then each record that has a timestamp within five seconds of the previous record with the same key will be merged into the same window. Otherwise, if the timestamp of a new record is greater than the inactivity gap (in this case, five seconds), then a new window will be created
 * `Sliding join windws` are fixed-sized windows that are used for joins and created using the JoinWindows class. Two records fall within the same window if the difference between their timestamps is less than or equal to the window size
-* `Sliding aggregation windows` like sliding join windows, the window boundaries in a sliding aggregation window are aligned to the record timestamps (as opposed to the epoch) and the lower and upper window boundaries are both inclusive. Additionally, records will fall within the same window if the difference between their timestamps is within the specified window si
+* `Sliding aggregation windows` like sliding join windows, the window boundaries in a sliding aggregation window are aligned to the record timestamps (as opposed to the epoch) and the lower and upper window boundaries are both inclusive. Additionally, records will fall within the same window if the difference between their timestamps is within the specified window size
+
+#### Delayed events
+Delayed and out-of-order data requires us to make a choice: do we wait a certain amount of time for all the 
+data to arrive, or do we output the window result whenever it is updated? 
+This is a trade-off between `completeness` and `latency`.  
+By default, Kafka Streams optimizes for latency, using an approach called [continuous refinement](https://www.confluent.io/blog/kafka-streams-take-on-watermarks-and-triggers/). 
+Continuous refinement means that whenever a new event is added to the window, Kafka Streams will emit the new 
+computation immediately.  However, with continuous refinement, each result should be seen as potentially incomplete, 
+and an emitted event does not mean we have processed every record that will eventually fall into the window. 
+Furthermore, delayed data can continue causing events to be emitted at unexpected times.
+
+Similar to the watermark approach used in many others stream frameworks, Kafka Streams allows us to configure 
+the `allowed lateness` of events using a `grace` period. Setting a grace period will keep the window open for a 
+specific amount of time, in order to admit delayed/unordered events to the window.

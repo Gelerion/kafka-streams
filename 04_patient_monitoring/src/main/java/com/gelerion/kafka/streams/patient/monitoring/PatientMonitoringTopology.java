@@ -8,6 +8,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.*;
+import org.apache.kafka.streams.kstream.Suppressed.BufferConfig;
 
 import java.time.Duration;
 
@@ -51,17 +52,9 @@ public class PatientMonitoringTopology {
                 .windowedBy(tumblingWindow)
                 // 3.2
                 // Materialize the heart rate for interactive queries
-                .count(Materialized.as("pulse-counts"));
-
-        pulseCounts
-                // for debugging purposes only
-                .toStream()
-                // One interesting thing to highlight in this code example is that the key of the KTable changed from
-                // String to Windowed<String>. This is because the windowedBy operator converts KTables into windowed
-                // KTables, which have multidimensional keys that contain not only the original record key, but also
-                // the time range of the window
-                // [<old_key>@<window_start_ms>/<window_end_ms>]
-                .print(Printed.<Windowed<String>, Long>toSysOut().withLabel("pulse-counts"));
+                .count(Materialized.as("pulse-counts"))
+                // 4
+                .suppress(Suppressed.untilWindowCloses(BufferConfig.unbounded().shutDownWhenFull()));
 
         //Output
         //[pulse-counts]: [1@1605171720000/1605171780000], 1
@@ -75,6 +68,23 @@ public class PatientMonitoringTopology {
         // (the beats per minute), but also the intermediate results of the window (the number of heartbeats in
         // this 60-second window so far)
 
+        // Suppression
+        /*
+        In order to use the suppress operator, we need to decide three things:
+         - Which suppression strategy should be used for suppressing intermediate window computations
+         - How much memory should be used for buffering the suppressed events (this is set using a Buffer Config)
+         - What to do when this memory limit is exceeded (this is controlled using a Buffer Full Strategy)
+         */
+
+        pulseCounts
+                // for debugging purposes only
+                .toStream()
+                // One interesting thing to highlight in this code example is that the key of the KTable changed from
+                // String to Windowed<String>. This is because the windowedBy operator converts KTables into windowed
+                // KTables, which have multidimensional keys that contain not only the original record key, but also
+                // the time range of the window
+                // [<old_key>@<window_start_ms>/<window_end_ms>]
+                .print(Printed.<Windowed<String>, Long>toSysOut().withLabel("pulse-counts"));
 
         return builder.build();
     }
