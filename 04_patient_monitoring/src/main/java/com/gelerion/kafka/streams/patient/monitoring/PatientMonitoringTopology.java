@@ -1,6 +1,7 @@
 package com.gelerion.kafka.streams.patient.monitoring;
 
 import com.gelerion.kafka.streams.patient.monitoring.models.BodyTemp;
+import com.gelerion.kafka.streams.patient.monitoring.models.CombinedVitals;
 import com.gelerion.kafka.streams.patient.monitoring.models.Pulse;
 import com.gelerion.kafka.streams.patient.monitoring.serialization.json.JsonSerdes;
 import com.gelerion.kafka.streams.patient.monitoring.times.extractors.VitalTimestampExtractor;
@@ -42,7 +43,12 @@ public class PatientMonitoringTopology {
         // only counting the records that fall within each 60-second window. This is where windowed aggregations come
         // into play.
 
-        TimeWindows tumblingWindow = TimeWindows.of(Duration.ofSeconds(60));
+        TimeWindows tumblingWindow =
+                TimeWindows.of(Duration.ofSeconds(60))
+                        // The default value is 24hours, which has caused continuous problems and confusion for users
+                        // of suppression since it means results won’t show up for 24 hour
+                        .grace(Duration.ofSeconds(5));
+
         KTable<Windowed<String>, Long> pulseCounts = pulseEvents
                 // 2
                 // Grouping records is a prerequisite for performing an aggregation
@@ -94,6 +100,7 @@ public class PatientMonitoringTopology {
                 .toStream()
                 // Filter for only heart rates that exceed our predefined threshold of 100 bpm
                 .filter((key, value) -> value >= 100)
+                //  6
                 // Rekey the stream using the original key
                 .map((windowedKey, value) -> KeyValue.pair(windowedKey.key(), value));
 
@@ -103,6 +110,39 @@ public class PatientMonitoringTopology {
                 //Filter for only core body temperature readings that exceed our predefined threshold of 100.4°F
                 tempEvents.filter((key, value) ->
                         value != null && value.getTemperature() != null && value.getTemperature() > 100.4);
+
+        // Windowed joins
+        StreamJoined<String, Long, BodyTemp> joinParams =
+                StreamJoined.with(Serdes.String(), Serdes.Long(), JsonSerdes.BodyTemp());
+
+        JoinWindows joinWindows = JoinWindows
+                // Records with timestamps one minute apart or less will fall into the same window, and will therefore be joined.
+                .of(Duration.ofSeconds(60))
+                // Tolerate a delay of up to 10 seconds
+                .grace(Duration.ofSeconds(10));
+
+        ValueJoiner<Long, BodyTemp, CombinedVitals> valueJoiner =
+                (pulseRate, bodyTemp) -> new CombinedVitals(pulseRate.intValue(), bodyTemp);
+
+        // 7
+        KStream<String, CombinedVitals> vitalsJoined =
+                highPulse.join(highTemp, valueJoiner, joinWindows, joinParams);
+
+        // 8
+        // In order to make our join results available to downstream consumers, we need to write the enriched data back to Kafka.
+        // For unjoined streams/tables, the timestamp is propagated from the initial timestamp extraction that occurred
+        // when you registered the source processors. However, if you perform a join, like we’ve done with our patient
+        // monitoring application, then Kafka Streams will look at the timestamps for each record involved in the join
+        // and choose the maximum value for the output record
+        vitalsJoined.to(
+                "alerts",
+                Produced.with(Serdes.String(), JsonSerdes.CombinedVitals())
+        );
+
+        // debug only
+        highPulse.print(Printed.<String, Long>toSysOut().withLabel("high-pulse"));
+        highTemp.print(Printed.<String, BodyTemp>toSysOut().withLabel("high-temp"));
+        vitalsJoined.print(Printed.<String, CombinedVitals>toSysOut().withLabel("vitals-joined"));
 
         return builder.build();
     }

@@ -5,6 +5,7 @@ public class BodyTemp implements Vital {
     private Double temperature;
     private String unit;
 
+    @Override
     public String getTimestamp() {
         return this.timestamp;
     }
