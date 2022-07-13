@@ -11,10 +11,13 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.*;
 import org.apache.kafka.streams.kstream.Suppressed.BufferConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 
 public class PatientMonitoringTopology {
+    private static final Logger log = LoggerFactory.getLogger(PatientMonitoringTopology.class);
 
     public static Topology build() {
         StreamsBuilder builder = new StreamsBuilder();
@@ -98,6 +101,13 @@ public class PatientMonitoringTopology {
         KStream<String, Long> highPulse = pulseCounts
                 // Convert to a stream, so we can use map operator to rekey the records
                 .toStream()
+                // for debug purposes
+                .peek((key, value) -> {
+                            String id = key.key();
+                            Long start = key.window().start();
+                            Long end = key.window().end();
+                            log.info("Patient {} had a heart rate of {} between {} and {}", id, value, start, end);
+                        })
                 // Filter for only heart rates that exceed our predefined threshold of 100 bpm
                 .filter((key, value) -> value >= 100)
                 //  6

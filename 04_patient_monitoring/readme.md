@@ -109,3 +109,7 @@ Furthermore, delayed data can continue causing events to be emitted at unexpecte
 Similar to the watermark approach used in many others stream frameworks, Kafka Streams allows us to configure 
 the `allowed lateness` of events using a `grace` period. Setting a grace period will keep the window open for a 
 specific amount of time, in order to admit delayed/unordered events to the window.
+
+#### Querying Windowed Key-Value Stores
+Windowed key-value stores support a different set of queries because the record keys are multidimensional, 
+and consist of both the original key and the window range, as opposed to just the original record key

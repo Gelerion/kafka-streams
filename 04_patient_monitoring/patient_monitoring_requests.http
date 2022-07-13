@@ -1,0 +1,7 @@
+# Get all pulse counts
+GET http://localhost:8091/bpm/all
+
+###
+
+# Get in range
+GET http://localhost:8091/bpm/range/1606122120000/1606122180000
