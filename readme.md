@@ -38,10 +38,11 @@ Running task from a subproject
   - Standby Replicas
 - Rebalancing
   - Preventing State Migration
-    - Sticky Assignment (To help prevent stateful tasks from being reassigned, Kafka Streams uses a custom partition assignment strategy that attempts to reassign tasks to instances that previously owned the task)
+    - Sticky Assignment (to help prevent stateful tasks from being reassigned, Kafka Streams uses a custom partition assignment strategy that attempts to reassign tasks to instances that previously owned the task)
     - Static Membership
   - Incremental Cooperative Rebalancing (>= 2.4)
 - Controlling State Size
   - Tombstones
   - Window retention
   - Aggressive topic compaction
+  - Fixed-size LRU cache
