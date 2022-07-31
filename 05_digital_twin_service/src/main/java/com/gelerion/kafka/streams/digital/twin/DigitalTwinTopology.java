@@ -1,9 +1,14 @@
 package com.gelerion.kafka.streams.digital.twin;
 
+import com.gelerion.kafka.streams.digital.twin.models.DigitalTwin;
+import com.gelerion.kafka.streams.digital.twin.processors.DigitalTwinProcessor;
 import com.gelerion.kafka.streams.digital.twin.processors.HighWindsFlatmapProcessor;
 import com.gelerion.kafka.streams.digital.twin.serialization.json.JsonSerdes;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.Stores;
 
 public class DigitalTwinTopology {
 
@@ -41,6 +46,25 @@ public class DigitalTwinTopology {
         );
 
         // Creating stateful processors
+        // In the Processing APi you must always create and connect state stores to the appropriate stream processors
+        // yourself when you need to perform stateful operation
+        StoreBuilder<KeyValueStore<String, DigitalTwin>> storeBuilder = Stores.keyValueStoreBuilder(
+                Stores.persistentKeyValueStore("digital-twin-store"),
+                Serdes.String(),
+                JsonSerdes.DigitalTwin()
+        );
+
+        topology.addProcessor(
+                "Digital Twin Processor",
+                DigitalTwinProcessor::new,
+                "High Winds Flatmap Processor", "Desired State Events"
+        );
+
+        topology.addStateStore(
+                storeBuilder,
+                "Digital Twin Processor"
+        );
+
 
 
         return topology;
