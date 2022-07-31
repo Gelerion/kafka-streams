@@ -31,6 +31,10 @@ Running task from a subproject
   - Window joins
   - Suppression
   - Time semantics
+- [05_digital_twin_service](05_digital_twin_service)
+  - Processor API
+  - Stateless and Stateful stream processing
+  - Periodic functions with Punctuate
 
 #### State Management
 - Fault Tolerance
