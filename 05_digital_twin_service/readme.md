@@ -70,3 +70,13 @@ In general, you may want to utilize the Processor API if you need to take advant
 - More fine-grained control over when records get forwarded to downstream processors
 - More granular access to state stores
 - Ability to circumvent any limitations you come across in the DSL
+
+### Punctuator
+Depending on your use case, you may need to perform some periodic task in your Kafka Streams application. This is one 
+area where the Processor API really shines, since it allows you to easily schedule a task using 
+the `ProcessorContext#schedule` method.  
+When we think about when a periodic function will execute in Kafka Streams, we are reminded of this complexity. 
+There are two punctuation types (i.e., timing strategies) that you can select from:
+  
+* `Stream time` Stream time is the highest timestamp observed for a particular topic-partition. It is initially unknown and can only increase or stay the same. It advances only when new data is seen, so if you use this punctuation type, then your function will not execute unless data arrives on a continuous basis.
+* `Wall clock time` The local system time, which is advanced during each iteration of the consumer poll method. The upper bound for how often this gets updated is defined by the `StreamsConfig.POLL_MS_CONFIG` configuration, which is the maximum amount of time (in milliseconds) the underlying poll method will block as it waits for new data. This means periodic functions will continue to execute regardless of whether or not new messages arrive.
