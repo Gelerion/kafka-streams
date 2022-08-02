@@ -40,6 +40,7 @@ public class DigitalTwinProcessor implements Processor<String, TurbineState, Str
         DigitalTwin digitalTwin = kvStore.get(key);
 
         if (digitalTwin == null) {
+            log.warn("Skipping state update due to unset type (must be: desired, reported)");
             digitalTwin = new DigitalTwin();
         }
 
@@ -49,7 +50,9 @@ public class DigitalTwinProcessor implements Processor<String, TurbineState, Str
             digitalTwin.setReported(value);
         }
 
+        log.info("Storing digital twin: {}", digitalTwin);
         kvStore.put(key, digitalTwin);
+
         Record<String, DigitalTwin> newRecord =
                 new Record<>(record.key(), digitalTwin, record.timestamp());
         context.forward(newRecord);
@@ -65,6 +68,7 @@ public class DigitalTwinProcessor implements Processor<String, TurbineState, Str
         try (KeyValueIterator<String, DigitalTwin> iter = kvStore.all()) {
             while (iter.hasNext()) {
                 KeyValue<String, DigitalTwin> entry = iter.next();
+                log.info("Checking to see if digital twin record has expired: {}", entry.key);
                 TurbineState lastReportedState = entry.value.getReported();
                 if (lastReportedState == null) {
                     continue;
