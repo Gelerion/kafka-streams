@@ -52,8 +52,39 @@ $ docker-compose exec kafka bash -c "
   --property 'parse.key=true' \
   --property 'key.separator=|' < reported-state-events.json"
 ```
-  
-Then you can produce the `desired-state-events` record using the following command:
+One of the example records included a windspeed of 68mph, which exceeds our threshold for safe operating conditions (our threshold is 65mph):
+```json
+{
+  "timestamp": "2020-11-23T09:02:01.000Z",
+  "wind_speed_mph": 68,
+  "power": "ON",
+  "type": "REPORTED"
+}
+```
+Therefore, we should be able to query the Kafka Streams-backed service to retrieve the device shadow for this device 
+(which has an ID of 1, as indicated by the record key), and the desired state should show as `OFF` since our 
+Kafka Streams application generated a shutdown signal. (`HighWindsFlatmapProcessor`)
+```sh
+$ curl localhost:7000/devices/1
+
+# output
+{
+"desired": {
+  "timestamp": "2020-11-23T09:02:01.000Z",
+  "windSpeedMph": 68,
+  "power": "OFF",
+  "type": "DESIRED"
+},
+"reported": {
+  "timestamp": "2020-11-23T09:02:01.000Z",
+  "windSpeedMph": 68,
+  "power": "ON",
+  "type": "REPORTED"
+}
+```
+
+We can also manually update the state of this device (i.e. by turning it on) by producing the following record 
+to the `desired-state-events` topic:
 ```sh
 $ docker-compose exec kafka bash -c "
   kafka-console-producer \

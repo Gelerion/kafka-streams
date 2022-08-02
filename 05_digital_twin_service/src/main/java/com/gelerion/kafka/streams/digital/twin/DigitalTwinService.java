@@ -35,7 +35,7 @@ public class DigitalTwinService {
 
     void start() {
         Javalin app = Javalin.create().start(hostInfo.port());
-        app.get("/devices/:id", this::getDevice);
+        app.get("/devices/{id}", this::getDevice);
     }
 
     void getDevice(Context ctx) {
