@@ -74,8 +74,6 @@ public class DigitalTwinTopology {
                 "Digital Twin Processor" // more parent nodes to connect to this sink
         );
 
-
-
         return topology;
     }
 
