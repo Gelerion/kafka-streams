@@ -65,6 +65,15 @@ public class DigitalTwinTopology {
                 "Digital Twin Processor"
         );
 
+        // Adding Sink processors
+        topology.addSink(
+                "Digital Twin Sink",
+                "digital-twins", //output topic
+                Serdes.String().serializer(),
+                JsonSerdes.DigitalTwin().serializer(),
+                "Digital Twin Processor" // more parent nodes to connect to this sink
+        );
+
 
 
         return topology;

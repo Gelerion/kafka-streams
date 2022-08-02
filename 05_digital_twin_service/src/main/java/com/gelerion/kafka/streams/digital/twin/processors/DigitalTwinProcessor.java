@@ -31,6 +31,20 @@ public class DigitalTwinProcessor implements Processor<String, TurbineState, Str
         this.punctuator = this.context.schedule(
                 Duration.ofMinutes(5),
                 PunctuationType.WALL_CLOCK_TIME, this::enforceTtl);
+
+        // commit progress every 20 seconds. commiting progress means committing the offset for the task
+        //
+        // note that the commit may not happen immediately,
+        // it's just a request to Kafka Streams to perform the commit when it can. for example,
+        // if we have downstream operators from this processor, committing immediately from here
+        // would be committing a partially processed record. therefore, Kafka Streams will determine
+        // when handle the commit request accordingly (e.g. after a batch of records have been
+        // processed)
+        //
+        // note that these commits happen in addition to the commits that Kafka Streams performs
+        // automatically, at the interval specified by commit.interval.ms
+        this.context.schedule(
+                Duration.ofSeconds(20), PunctuationType.WALL_CLOCK_TIME, (ts) -> context.commit());
     }
 
     @Override
