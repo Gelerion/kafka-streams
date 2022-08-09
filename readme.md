@@ -35,7 +35,9 @@ Running task from a subproject
   - Processor API
   - Stateless and Stateful stream processing
   - Periodic functions with Punctuate
-
+- [06_monitoring_changes_at_netflix](06_monitoring_changes_at_netflix)
+  - ksqlDB
+  
 #### State Management
 - Fault Tolerance
   - Changelog Topics. (state stores are backed by changelog topics)
