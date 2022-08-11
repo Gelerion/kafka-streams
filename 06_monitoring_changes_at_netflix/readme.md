@@ -31,9 +31,39 @@ Once the services are running, open another tab and log into the ksqlDB CLI usin
 $ docker-compose exec ksqldb-cli  ksql http://ksqldb-server:8088
 ```
 Now, you can run each of the queries from the CLI:
-- files/sql/all.sql
+- files/sql/ddl.sql
+- files/sql/dml.sql
   
 If you'd like to run all the queries in the above file, simply execute the following statement from the CLI:
 ```sh
-ksql> RUN SCRIPT '/etc/sql/all.sql';
+ksql> RUN SCRIPT '/etc/sql/ddl.sql';
+```
+
+### Persistent Queries
+`SELECT` queries like
+```sql
+SELECT title_id, before, after, created_at
+FROM production_changes
+EMIT CHANGES ;
+```
+are transient. The output is returned to the client, but not written back to Kafka.
+`ksqlDB` also allows us to create so-called persistent queries, which write the results to Kafka and also survive 
+server restarts. This is useful when you want to make your filtered, transformed, and/or enriched stream available 
+to other clients. In order to write the results of a query back to Kafka, we can create derived collections. 
+
+`Derived collections` are the product of creating streams and tables from other streams and tables. The syntax varies 
+slightly from the way we create source collections, since we don’t specify the column schemas and there 
+is an added `AS SELECT` clause.  
+The queries for creating derived streams are often referred to by one of two acronyms:
+- `CSAS` queries (CREATE STREAM AS SELECT) are used to create derived streams.
+- `CTAS` queries (CREATE TABLE AS SELECT) are used to create derived tables.
+  
+Example:
+```sql
+CREATE STREAM season_length_changes
+WITH( 
+    ...
+) AS SELECT ROWKEY, id, ...
+     FROM stream_collection
+     EMIT CHANGES;    
 ```
