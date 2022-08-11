@@ -37,6 +37,8 @@ Running task from a subproject
   - Periodic functions with Punctuate
 - [06_monitoring_changes_at_netflix](06_monitoring_changes_at_netflix)
   - ksqlDB
+  - Custom data types 
+  - Persistent queries
   
 #### State Management
 - Fault Tolerance
