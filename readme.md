@@ -39,6 +39,8 @@ Running task from a subproject
   - ksqlDB
   - Custom data types 
   - Persistent queries
+  - Joins and aggregations
+  - UDFs
   
 #### State Management
 - Fault Tolerance
