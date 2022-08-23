@@ -32,11 +32,14 @@ $ docker-compose exec ksqldb-cli  ksql http://ksqldb-server:8088
 ```
 Now, you can run each of the queries from the CLI:
 - files/sql/ddl.sql
-- files/sql/dml.sql
+- files/sql/insert_titles.sql
+- files/sql/insert_product_changes_events.sql
   
 If you'd like to run all the queries in the above file, simply execute the following statement from the CLI:
 ```sh
 ksql> RUN SCRIPT '/etc/sql/ddl.sql';
+ksql> RUN SCRIPT '/etc/sql/insert_titles.sql';
+ksql> RUN SCRIPT '/etc/sql/insert_product_changes_events.sql';
 ```
 
 ### Persistent Queries
@@ -67,3 +70,42 @@ WITH(
      FROM stream_collection
      EMIT CHANGES;    
 ```
+
+### Aggregations
+Aggregations can be computed over both streams and tables, but they always return a table. This is because aggregate 
+functions are applied to a group of related records, and the result of our aggregate function (e.g., `COUNT`) needs 
+to be saved to some mutable structure that can easily be retrieved and updated whenever new records come in.
+There are two broad categories of aggregations: windowed and unwindowed.
+
+### Pull Queries
+We can execute pull queries against the materialized view. Pull queries can be thought of as simple lookups that 
+reference a key column, and for windowed views, they can also optionally reference the `WINDOWSTART` pseudo column, 
+which contains the lower boundary for a given window’s time range (the upper boundary is stored in another pseudo 
+column called `WINDOWEND`, but this latter column is not queryable).
+
+Our query references two columns in the `GROUP BY` clause:
+```sql
+GROUP BY title_id, season_id
+```
+In this case, `ksqlDB` will generate a key column for us in the format of `KSQL_COL_?` (this is another artifact of 
+the current implementation of ksqlDB that may be changing in the future). 
+```sh
+ksql> DESCRIBE season_length_change_counts ;
+
+Name                 : SEASON_LENGTH_CHANGE_COUNTS
+ Field         | Type
+------------------------------------------------------------------------
+ KSQL_COL_0    | VARCHAR(STRING)  (primary key) (Window type: TUMBLING)
+ EPISODE_COUNT | INTEGER
+ CHANGE_COUNT  | BIGINT
+------------------------------------------------------------------------
+```
+
+We can perform a lookup against the `season_length_change_counts` view using the pull query
+```sql
+SELECT *
+FROM season_length_change_counts
+WHERE KSQL_COL_0 = '1|+|1' ;
+```
+When grouping by multiple fields, the key is a composite value where the value of each column is separated by `|+|`.
+If we were only grouping by one field (e.g., `title_id`), then we would use `WHERE title_id=1`

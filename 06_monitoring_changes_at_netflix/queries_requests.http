@@ -1,0 +1,8 @@
+# Select session lengh changes
+POST http://localhost:8088/query
+Content-Type: application/vnd.ksql.v1+json; charset=utf-8
+
+{
+  "ksql": "SELECT * FROM season_length_change_counts WHERE KSQL_COL_0='1|+|1';",
+  "streamsProperties": {}
+}
